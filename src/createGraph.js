@@ -172,8 +172,6 @@ function createGraph(nodes, edges, windowSize) {
             .duration(50)
             .style("opacity", 1);
         tooltip.html(node_data.name)
-            .style("left", 50 + "px")
-            .style("top", 50 + "px");
 
         // const neighbors = getNeighbors(node_name)
         // link = drawLinks(getArtistEdges(node_name))
@@ -186,8 +184,6 @@ function createGraph(nodes, edges, windowSize) {
         tooltip
             .transition()
             .duration(10).style("opacity", 0)
-            .style("left",50 + "px")
-            .style("top", 50+ "px");
 
         // const neighbors = getNeighbors(node_name)
         // d3.selectAll("circle").filter(d => neighbors.includes(d.name)).attr("stroke", "black")
