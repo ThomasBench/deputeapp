@@ -16,7 +16,7 @@ function centroid(nodes) {
 
 
 function forceCluster() {
-    const strength = 0.3;
+    const strength = 2;
     let nodes;
 
     function force(alpha) {
@@ -36,7 +36,7 @@ function forceCluster() {
 
     return force;
 }
-function createGraph(nodes, edges, windowSize) {
+function createGraph(nodes, edges, windowSize, handler) {
     // const linkStroke = 1
     // const linkStrokeOpacity = 1
     // const linkStrokeLinecap = 1
@@ -45,15 +45,15 @@ function createGraph(nodes, edges, windowSize) {
     // const nodeStroke = 'red'
     // const nodeStrokeOpacity = 1
     const nodeStrokeWidth = 50
-    const nodeRadius = 80
+    const nodeRadius = 100  
 
-    const nodeStrength = -2
-    const linkStrength = 0.1
+    const nodeStrength = -1
+    const linkStrength = 0.15
     const simulationDuration = 120 * 1000
     let endTime = Date.now() + simulationDuration
 
     const visu_size = windowSize
-    const visu_ratio = 1.8
+    const visu_ratio = 1.9
     const color_node = d3.scaleOrdinal(d3.schemeTableau10)
     const color_link = d3.scaleSequential(d3.interpolateCool).domain([1, 5])
     const links = edges.map((edgeData) => ({ "source": edgeData["data"]["source"], 'target': edgeData["data"]["target"], "weight": edgeData["data"]["weight"] }))
@@ -67,24 +67,25 @@ function createGraph(nodes, edges, windowSize) {
     // }
     const forceNode = d3.forceManyBody();
     const forceLink = d3.forceLink(links).id((node) => (node.id)).distance((d) => {
-        return 150* (1/d.weight) ** 1.3
+        return 1.3*(150* (1/d.weight) ** 1.3 )
     });
     if (nodeStrength !== undefined) forceNode.strength(nodeStrength);
     if (linkStrength !== undefined) forceLink.strength(linkStrength);
 
     const node_d3 = nodes.map((n) => (n["data"]))
-    const simulation = d3.forceSimulation(node_d3).alphaTarget(0.3)
+    const simulation = d3.forceSimulation(node_d3)//.alphaTarget(0.3)
         .force("link", forceLink)
         .force("charge", forceNode)
         .force("center", d3.forceCenter().strength(0.5))
         .force(
             "collision",
-            d3.forceCollide().radius(d => 5*d.radius).strength(100)
+            d3.forceCollide().radius(d => nodeRadius+10).strength(0.1)
         )
         .force("cluster", forceCluster())
         .velocityDecay(0.35)
         // .on("tick", ticked)
         .on("tick", ticked);
+        // simulation.tick(300)
     // simulation.stop()
     const svg = d3.select("#mynetwork").append("svg")
         .attr("width", "100%")
@@ -140,7 +141,7 @@ function createGraph(nodes, edges, windowSize) {
         .attr("r", (d) => (0.8 + (d.size) ** (0.7) * nodeRadius))
         .attr("fill", (d) => color_node(d.group))
         .attr("stroke", "black")
-        .attr("strokeWidth", nodeStrokeWidth)
+        .attr("stroke-width", nodeStrokeWidth)
         .call(drag(simulation))
         .on("mouseover", mouseover)
         .on("mouseout", mouseout)
@@ -168,10 +169,7 @@ function createGraph(nodes, edges, windowSize) {
         const radius = d3.select(this).attr("r")
         const xval = d3.select(this).node().getBoundingClientRect().x
         const yval = d3.select(this).node().getBoundingClientRect().y + radius + 10
-        tooltip.transition()
-            .duration(50)
-            .style("opacity", 1);
-        tooltip.html(node_data.name)
+        handler(node_data)
 
         // const neighbors = getNeighbors(node_name)
         // link = drawLinks(getArtistEdges(node_name))
@@ -181,10 +179,7 @@ function createGraph(nodes, edges, windowSize) {
         const node_name = event.target.__data__.name
 
         // link.remove()
-        tooltip
-            .transition()
-            .duration(10).style("opacity", 0)
-
+        handler("")
         // const neighbors = getNeighbors(node_name)
         // d3.selectAll("circle").filter(d => neighbors.includes(d.name)).attr("stroke", "black")
 
