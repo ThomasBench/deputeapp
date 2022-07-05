@@ -7,7 +7,7 @@ import Tooltip from './Tooltip'
 const initialState = ""
 const Content = () => {
     const network = data["elements"]
-    const windowSize = 15.5*1000
+    const windowSize = 16.5*1000
     const [state, setState] = useState(initialState)
     function handleMouseSelect(depute){
         if (depute !== ""){

@@ -1,4 +1,6 @@
 import * as d3 from "d3"
+import node_data from "./node_data"
+
 
 function centroid(nodes) {
     let x = 0;
@@ -36,6 +38,23 @@ function forceCluster() {
 
     return force;
 }
+
+function keyHandler(keyEvent, simu, simu_on){
+    const code = keyEvent.code
+    if (code === 'Space'){
+        if (simu_on.on){
+            simu.stop()
+            simu_on.on = false
+        }
+        else{
+            simu.restart()
+            simu_on.on = true
+        }
+    }
+}
+function handleZoom(e,s) {
+    s.attr('transform', e.transform);
+  }
 function createGraph(nodes, edges, windowSize, handler) {
     // const linkStroke = 1
     // const linkStrokeOpacity = 1
@@ -57,14 +76,15 @@ function createGraph(nodes, edges, windowSize, handler) {
     const color_node = d3.scaleOrdinal(d3.schemeTableau10)
     const color_link = d3.scaleSequential(d3.interpolateCool).domain([1, 5])
     const links = edges.map((edgeData) => ({ "source": edgeData["data"]["source"], 'target': edgeData["data"]["target"], "weight": edgeData["data"]["weight"] }))
-    // function getArtistEdges(artist_name) {
-    //     return links.filter((elem) => (elem.source.name === artist_name || elem.targetName === artist_name))
-    // }
+    function getDeputeEdges(depute_name, neighbors) {
+        const candidates = links.filter((elem) => (elem.source.name === depute_name)).sort((a,b) =>b.weight - a.weight)
+        return candidates.slice(0,Math.min(candidates.length, 20))
+    }
 
 
-    // function getNeighbors(artist_name) {
-    //     return Object.keys(nodedata[artist_name])
-    // }
+    function getNeighbors(depute_name) {
+        return node_data[depute_name].closest
+    }
     const forceNode = d3.forceManyBody();
     const forceLink = d3.forceLink(links).id((node) => (node.id)).distance((d) => {
         return 1.3*(150* (1/d.weight) ** 1.3 )
@@ -83,33 +103,24 @@ function createGraph(nodes, edges, windowSize, handler) {
         )
         .force("cluster", forceCluster())
         .velocityDecay(0.35)
-        // .on("tick", ticked)
         .on("tick", ticked);
-        // simulation.tick(300)
-    // simulation.stop()
+
+    let simulation_on = {on: true};
     const svg = d3.select("#mynetwork").append("svg")
         .attr("width", "100%")
         .attr("height", "100%")
-        // .attr('transform', 'translate(500,50)')
         .attr("viewBox", `-${visu_size}, -${visu_size/visu_ratio},${visu_size * 2},${visu_size * 2/visu_ratio}`)
-        // // .attr("viewBox", ["-width / 2", -height / 2, width, height])
-        .attr("style", "max-width: 100%; height: intrinsic;");
+        .attr("style", "max-width: 100%; height: intrinsic;")
+       
+       
+    d3.select("body").on("keydown", (event) => keyHandler(event, simulation, simulation_on))
+    
     let width = d3.select('svg').style("width");
     let height = d3.select('svg').style("height");
 
     width = width.substring(0, width.length - 2);
     height = height.substring(0, height.length - 2);
 
-    // const node = svg.append("g")
-    //     .attr("fill", nodeFill)
-    //     .attr("stroke", nodeStroke)
-    //     .attr("stroke-opacity", nodeStrokeOpacity)
-    //     .attr("stroke-width", nodeStrokeWidth)
-    //     .selectAll("circle")
-    //     .data(nodes)
-    //     .join("circle")
-    //     .attr("r", nodeRadius)
-    //     .call(drag(simulation));
     function drawLinks(data) {
         const link = svg.selectAll("line")
             .data(data)
@@ -129,16 +140,17 @@ function createGraph(nodes, edges, windowSize, handler) {
             ).lower()
         return link
     }
-    const actual_edges = links.filter((x) => {
-        return x.weight > 0.25
-    })
+    // const actual_edges = links.filter((x) => {
+    //     console.log(x.source.name)
+    //     return x.weight > 0.25 && 
+    // })
     let link = drawLinks([])
 
     const node = svg
         .selectAll("circle")
         .data(node_d3)
-        .join("circle")
-        .attr("r", (d) => (0.8 + (d.size) ** (0.7) * nodeRadius))
+        .join("circle") 
+        .attr("r", (d) => nodeRadius)
         .attr("fill", (d) => color_node(d.group))
         .attr("stroke", "black")
         .attr("stroke-width", nodeStrokeWidth)
@@ -146,11 +158,6 @@ function createGraph(nodes, edges, windowSize, handler) {
         .on("mouseover", mouseover)
         .on("mouseout", mouseout)
 
-    const tooltip = d3.select("#tooltip")
-
-    function intern(value) {
-        return value !== null && typeof value === "object" ? value.valueOf() : value;
-    }
 
     function ticked() {
         link
@@ -165,20 +172,23 @@ function createGraph(nodes, edges, windowSize, handler) {
     }
     function mouseover(event) {
         const node_data = event.target.__data__
-
-        const radius = d3.select(this).attr("r")
-        const xval = d3.select(this).node().getBoundingClientRect().x
-        const yval = d3.select(this).node().getBoundingClientRect().y + radius + 10
+        const neighbors = getNeighbors(node_data.name)
+        const edges = getDeputeEdges(node_data.name, neighbors)
+        // const radius = d3.select(this).attr("r")
+        // const xval = d3.select(this).node().getBoundingClientRect().x
+        // const yval = d3.select(this).node().getBoundingClientRect().y + radius + 10
+        link = drawLinks(edges)
+        d3.select(this)
+        .transition(10)
+        .attr("r", nodeRadius*2)
         handler(node_data)
-
-        // const neighbors = getNeighbors(node_name)
-        // link = drawLinks(getArtistEdges(node_name))
-        // d3.selectAll("circle").filter(d => neighbors.includes(d.name)).attr("stroke", "white")
     }
     function mouseout(event) {
         const node_name = event.target.__data__.name
-
-        // link.remove()
+        d3.select(this)
+            .transition(10)
+            .attr("r", nodeRadius)
+        link.remove()
         handler("")
         // const neighbors = getNeighbors(node_name)
         // d3.selectAll("circle").filter(d => neighbors.includes(d.name)).attr("stroke", "black")
@@ -187,7 +197,7 @@ function createGraph(nodes, edges, windowSize, handler) {
         // .attr("opacity", 0.2)
 
     }
-
+    
     function drag(simulation) {
         function dragstarted(event) {
             console.log(event.subject.name)
@@ -217,6 +227,10 @@ function createGraph(nodes, edges, windowSize, handler) {
     }
 
 
+    // const zoom = d3.zoom()
+    // .scaleExtent([0.3, 3])
+    // .on('zoom', (e) => handleZoom(e,svg));
+    // svg.call(zoom)
     return;
 
 }
