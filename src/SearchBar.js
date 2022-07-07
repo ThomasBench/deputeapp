@@ -8,6 +8,7 @@ const SearchBar = () => {
     function handleChange(value){
       if (value !== null){
         context.state.zoomFunc(value)
+        context.state.highlight(value)
         context.dispatcher({type: "search", data: value})
         }
     }
@@ -17,15 +18,20 @@ const SearchBar = () => {
                 {
                   position: "absolute",
                   top: '50px',
-                  right: "10px",
-                  // borderWidth: "5px",
-                  // borderStyle: "solid",
+                  right: "30px",
+                  borderWidth: "2px",
+                  borderStyle: "solid",
+                  borderRadius: '5px',
+                  padding: '5px',
                   width: "20%",
+                  backgroundColor: "antiquewhite",
                   verticalAlign: "middle",
                   textAlign: "justify"
                 }
             }>
-        Cherche ton député frr:
+        Cherchez un.e député.e : 
+        <br/>
+        <br/>
         <Autocomplete
             options = {deputes}
             renderInput = {(params) => <TextField {...params} label="Député.e" />}
