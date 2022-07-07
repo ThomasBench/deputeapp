@@ -1,10 +1,13 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import node_data from "./node_data"
 import Card from '@mui/material/Card'
+import { contentContext } from './Content'
 import { CardHeader, CardContent, Divider, Typography} from '@mui/material'
-const Tooltip = (props) => {
-  const depute = node_data[props.props]
-  if (props.props !== "") {
+const Tooltip = () => {
+  const context = useContext(contentContext)
+
+  if (context.state.chosen_depute !== "") {
+    const depute = node_data[context.state.chosen_depute]
     return (
       <Card
       variant = "outlined"

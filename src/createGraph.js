@@ -38,14 +38,14 @@ function forceCluster(strength) {
     return force;
 }
 
-function keyHandler(keyEvent, simu, simu_on){
+function keyHandler(keyEvent, simu, simu_on) {
     const code = keyEvent.code
-    if (code === 'Space'){
-        if (simu_on.on){
+    if (code === 'Space') {
+        if (simu_on.on) {
             simu.stop()
             simu_on.on = false
         }
-        else{
+        else {
             simu.restart()
             simu_on.on = true
         }
@@ -63,7 +63,7 @@ function createGraph(nodes, edges, windowSize, handler) {
     // const nodeStroke = 'red'
     // const nodeStrokeOpacity = 1
     const nodeStrokeWidth = 50
-    const nodeRadius = 100  
+    const nodeRadius = 100
 
     const nodeStrength = -1
     const linkStrength = 0.15
@@ -76,8 +76,8 @@ function createGraph(nodes, edges, windowSize, handler) {
     const color_link = d3.scaleSequential(d3.interpolateCool).domain([0, 0.5])
     const links = edges.map((edgeData) => ({ "source": edgeData["data"]["source"], 'target': edgeData["data"]["target"], "weight": edgeData["data"]["weight"] }))
     function getDeputeEdges(depute_name, neighbors) {
-        const candidates = links.filter((elem) => (elem.source.name === depute_name)).sort((a,b) =>b.weight - a.weight)
-        return candidates.slice(0,Math.min(candidates.length, 50))
+        const candidates = links.filter((elem) => (elem.source.name === depute_name)).sort((a, b) => b.weight - a.weight)
+        return candidates.slice(0, Math.min(candidates.length, 50))
     }
 
 
@@ -86,7 +86,7 @@ function createGraph(nodes, edges, windowSize, handler) {
     }
     const forceNode = d3.forceManyBody();
     const forceLink = d3.forceLink(links).id((node) => (node.id)).distance((d) => {
-        return 1.3*(150* (1/d.weight) ** 1.3 )
+        return 1.3 * (150 * (1 / d.weight) ** 1.3)
     });
     if (nodeStrength !== undefined) forceNode.strength(nodeStrength).theta(1.7);
     if (linkStrength !== undefined) forceLink.strength(linkStrength).iterations(5);
@@ -97,21 +97,21 @@ function createGraph(nodes, edges, windowSize, handler) {
         .force("charge", forceNode)
         .force("cluster", forceCluster(2))
         .force("center", d3.forceCenter().strength(0.2).x(300))
-        .force("collision", d3.forceCollide().radius(d => nodeRadius+10).strength(0.1))
+        .force("collision", d3.forceCollide().radius(d => nodeRadius + 10).strength(0.1))
         .velocityDecay(0.4)
         // .alphaDecay(0.001)
         .on("tick", ticked);
 
-    let simulation_on = {on: true};
-    const svg = d3.select("#mynetwork").append("svg")
-        .attr("width", "100%")
-        .attr("height", "100%")
-        .attr("viewBox", `-${visu_size}, -${visu_size/visu_ratio},${visu_size * 2},${visu_size * 2/visu_ratio}`)
-        .attr("style", "max-width: 100%; height: intrinsic;")
-       
-       
+    let simulation_on = { on: true };
+    const svgMain = d3.select("#mynetwork").append("svg")
+        // .attr("width", "100%")
+        // .attr("height", "100%")
+        .attr("display", "block")
+        .attr("viewBox", `-${visu_size}, -${visu_size / visu_ratio},${visu_size * 2},${visu_size * 2 / visu_ratio}`)
+        .attr("style", "max-width: 99%; height: intrinsic;")
+    const svg = svgMain.append("g").attr('transform', "translate(0,0) scale(1) ")
     d3.select("body").on("keydown", (event) => keyHandler(event, simulation, simulation_on))
-    
+
     // let width = d3.select('svg').style("width");
     // let height = d3.select('svg').style("height");
 
@@ -124,7 +124,7 @@ function createGraph(nodes, edges, windowSize, handler) {
             .join(
                 enter => enter.append("line")
                     .attr("stroke", d => color_link(d.weight))
-                    .attr("stroke-width",linkStrokeWidth)
+                    .attr("stroke-width", linkStrokeWidth)
                     .attr("opacity", 1)
                     .attr("x1", d => d.source.x)
                     .attr("y1", d => d.source.y)
@@ -146,10 +146,11 @@ function createGraph(nodes, edges, windowSize, handler) {
     const node = svg
         .selectAll("circle")
         .data(node_d3)
-        .join("circle") 
+        .join("circle")
         .attr("r", (d) => nodeRadius)
         .attr("fill", (d) => color_node(d.group))
         .attr("stroke", "black")
+        .attr("identifier", (d) => d.name)
         .attr("stroke-width", nodeStrokeWidth)
         .call(drag(simulation))
         .on("mouseover", mouseover)
@@ -171,22 +172,21 @@ function createGraph(nodes, edges, windowSize, handler) {
         const node_data = event.target.__data__
         const neighbors = getNeighbors(node_data.name)
         const edges = getDeputeEdges(node_data.name, neighbors)
-        // const radius = d3.select(this).attr("r")
-        // const xval = d3.select(this).node().getBoundingClientRect().x
-        // const yval = d3.select(this).node().getBoundingClientRect().y + radius + 10
+
         link = drawLinks(edges)
         d3.select(this)
-        .transition(10)
-        .attr("r", nodeRadius*2)
-        handler(node_data)
+        .transition().duration(180)
+            .attr("r", nodeRadius * 2)
+        handler({ type: "mouseover", data: node_data.name })
     }
     function mouseout(event) {
         // const node_name = event.target.__data__.name
         d3.select(this)
-            .transition(10)
+            .transition().duration(250)
             .attr("r", nodeRadius)
         link.remove()
-        handler("")
+        handler({ type: "mouseout", data: "" })
+
         // const neighbors = getNeighbors(node_name)
         // d3.selectAll("circle").filter(d => neighbors.includes(d.name)).attr("stroke", "black")
 
@@ -194,12 +194,12 @@ function createGraph(nodes, edges, windowSize, handler) {
         // .attr("opacity", 0.2)
 
     }
-    
+
     function drag(simulation) {
         function dragstarted(event) {
             console.log(event)
             if (!event.active) simulation.alphaTarget(0.1).restart()
-            ;
+                ;
             event.subject.fx = event.subject.x;
             event.subject.fy = event.subject.y;
             // simulation.restart()
@@ -211,7 +211,7 @@ function createGraph(nodes, edges, windowSize, handler) {
         }
 
         function dragended(event) {
-            if (!event.active) simulation.alphaTarget(0);
+            if (!event.active) simulation.alphaTarget(0.05);
             event.subject.fx = null;
             event.subject.fy = null;
             // simulation.stop()
@@ -223,11 +223,53 @@ function createGraph(nodes, edges, windowSize, handler) {
             .on("end", dragended);
     }
 
+    function handleZoom(e) {
+        svg.attr("transform", e.transform)
+    }
+    let zoom = d3.zoom().on("zoom", handleZoom).filter( (event) =>{
+        const eventType = event.type
+        switch(eventType){
+            case "mousedown":
+                return true
+            case "wheel":
+                return false
+            case "touchstart":
+                return event.touches.length <2
+            default:
+                return false
+        }
+    })
+    svgMain.call(zoom)
+    function zoomOnDepute(depute_name) {
+        // First we need to find the right node
+        const selected_node = svg.selectAll(`circle[identifier="${depute_name}"]`)
+        const x = selected_node.attr("cx")
+        const y = selected_node.attr("cy")
+        const zoomValue = 3
+        svg.transition().duration(3000).attr("transform", `translate(${svg.attr("width")/2-x},${svg.attr("height")/2-y}), scale(${zoomValue})`)
+        // tellement dommage c'était si smart
+        // Now we zoom on that specific node 
+        // const box = selected_node.node().getBoundingClientRect()
+        // console.log(box)
+        // console.log()
+        // const old_view_box = svg.attr("viewBox")
+        // console.log(old_view_box, x,y)
+        // const ref_viewbox =[- visu_size, -visu_size, visu_size*2 , visu_size*2  / visu_ratio]
+        // const zoom = 3
+        // const newVisuSize = visu_size/zoom
+        // const newViewBox = [x-newVisuSize, y-newVisuSize/visu_ratio,newVisuSize*2, newVisuSize*2/visu_ratio]
+        // // svg.transition().duration(3000).attr("transform", "translate(" + [box.x/box.left, box.y/box.top] + ")scale(" + 2 + ")")
+        // svg.transition().duration(3000).attr("viewBox", newViewBox)
 
+
+
+    }
     // const zoom = d3.zoom()
     // .scaleExtent([0.3, 3])
     // .on('zoom', (e) => handleZoom(e,svg));
     // svg.call(zoom)
+
+    handler({ type: "init", data: zoomOnDepute })
     return;
 
 }
