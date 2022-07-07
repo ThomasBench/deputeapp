@@ -246,12 +246,15 @@ function createGraph(nodes, edges, windowSize, handler) {
         const selected_node = svg.selectAll(`circle[identifier="${node_name}"]`)
         selected_node.transition().duration(180)
             .attr("r", nodeRadius * 2)
+            .attr("stroke", "white")
     }
     function removeHighlight(node_name){
         const selected_node = svg.selectAll(`circle[identifier="${node_name}"]`)
         selected_node
         .transition().duration(250)
         .attr("r", nodeRadius)
+        .attr("stroke", "black")
+
         svg.selectAll("line").remove()
 
     }
